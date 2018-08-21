@@ -1,0 +1,263 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+    <actions/>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <assignedNode>/#AGENT_LABEL#/</assignedNode>
+    <canRoam>false</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <hudson.plugins.python.Python plugin="python@1.2">
+            <command>
+#import os
+#hosts_content = "/#JOB_HOSTS#/"
+#hosts_file = "/etc/hosts"
+#if os.path.exists(hosts_file):
+#    os.remove(hosts_file)
+#new_hosts = open(hosts_file, 'a')
+#new_hosts.write(hosts_content)
+import os
+os.system("echo '/#JOB_HOSTS#/' > /etc/hosts")
+            </command>
+        </hudson.plugins.python.Python>
+        <hudson.plugins.python.Python plugin="python@1.2">
+            <command>
+import os
+import random
+import time
+svn_url = "/#SVN_URL#/"
+
+svn_code = "/#SVN_CODE_DIR#/"
+if not os.path.exists("/#JOB_DIR#/"):
+    svn_code = "/#SVN_CODE_DIR2#/"
+
+svn_url_dir = "/#SVN_DIR#/"
+svn_dir = svn_code + svn_url_dir
+
+jenkins_jobs = "/#JOB_DIR#/"
+if not os.path.exists("/#JOB_DIR#/"):
+    jenkins_jobs = "/#JOB_DIR2#/"
+
+job_name = "/#JOB_NAME#/"
+jenkins_target = jenkins_jobs + job_name
+if not os.path.exists(jenkins_target):
+    os.makedirs(jenkins_target)
+
+code = 1
+copy_code = 1
+for i in range(10):
+    if code != 0:
+        print("The %d time to sleep" % i)
+        sleepTime = random.randint(0, 10000) / 1000.0
+        print sleepTime
+        time.sleep(sleepTime)
+        if not os.path.exists(svn_dir):
+            os.makedirs(svn_dir)
+            os.chdir(svn_dir + "/..")
+            code = os.system('svn co ' + svn_url + ' --username=/#SVN_USERNAME#/ --password=/#SVN_PASSWORD#/')
+            print "svn co code: %d" % code
+        else:
+            os.chdir(svn_dir)
+            code = os.system('svn up --username=/#SVN_USERNAME#/ --password=/#SVN_PASSWORD#/')
+            print "svn up code: %d" % code
+    elif copy_code != 0:
+        os.chdir(svn_dir)
+        copy_code = os.system("cp -fr " + svn_dir + " " + jenkins_target)
+        print "copy code: %d" % copy_code
+            </command>
+        </hudson.plugins.python.Python>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gtp:genGuiConf -DtaskListId=/#TASKLIST_ID#/ -DworkDir=/#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gtp:start -DtaskListId=/#TASKLIST_ID#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gui:genPage -U
+mvn clean install -Dmaven.test.skip=true
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gui:genTests -U
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gtp:spiltCase -DtaskListId=/#TASKLIST_ID#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//TestProject
+mvn clean test
+exit 0
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.plugins.python.Python plugin="python@1.2">
+            <command>
+__author__ = 'lizonglin'
+
+import os
+from ftplib import FTP
+
+_XFER_FILE = 'FILE'
+_XFER_DIR = 'DIR'
+
+class Xfer(object):
+    def __init__(self):
+        self.ftp = None
+    def __del__(self):
+        pass
+
+    def setFtpParams(self, ip, uname, pwd, port = 21, timeout = 60):
+        self.ip = ip
+        self.uname = uname
+        self.pwd = pwd
+        self.port = port
+        self.timeout = timeout
+
+    def initEnv(self):
+        if self.ftp is None:
+            self.ftp = FTP()
+            print '### connect ftp server: %s ...'%self.ip
+            self.ftp.connect(self.ip, self.port, self.timeout)
+            self.ftp.login(self.uname, self.pwd)
+            print self.ftp.getwelcome()
+
+    def clearEnv(self):
+        if self.ftp:
+            self.ftp.close()
+            print '### disconnect ftp server: %s!'%self.ip
+            self.ftp = None
+
+    def uploadDir(self, localdir='./', remotedir = './'):
+        if not os.path.isdir(localdir):
+            return
+        localnames = os.listdir(localdir)
+        self.ftp.cwd(remotedir)
+        for item in localnames:
+            src = os.path.join(localdir, item)
+            if os.path.isdir(src):
+                try:
+                    self.ftp.mkd(item)
+                except:
+                    print('the dir is exists %s' %item)
+                self.uploadDir(src, item)
+            else:
+                self.uploadFile(src, item)
+        self.ftp.cwd('..')
+
+    def uploadFile(self, localpath, remotepath='./'):
+        if not os.path.isfile(localpath):
+            return
+        print '+++ upload %s to %s:%s'%(localpath, self.ip, remotepath)
+        self.ftp.storbinary('STOR ' + remotepath.decode('gbk').encode('utf-8'), open(localpath.decode('gbk'), 'rb'))
+
+    def __filetype(self, src):
+        if os.path.isfile(src):
+            index = src.rfind('\\')
+            if index == -1:
+                index = src.rfind('/')
+            return _XFER_FILE, src[index+1:]
+        elif os.path.isdir(src):
+            return _XFER_DIR, ''
+
+    def upload(self, src):
+        filetype, filename = self.__filetype(src)
+
+        self.initEnv()
+        self.ftp.cwd("/#GUI_FTP_REPORT_SUBDIR#/")
+        self.ftp.mkd("/#JOB_NAME#/")
+        self.ftp.cwd("/#JOB_NAME#/")
+        if filetype == _XFER_DIR:
+            self.srcDir = src
+            self.uploadDir(self.srcDir)
+        elif filetype == _XFER_FILE:
+            self.uploadFile(src, filename)
+            self.clearEnv()
+
+    def copyReport(self, src, jobName):
+        os.chdir(src)
+        os.mkdir(jobName)
+        newDir = src + "/" + jobName
+        os.chdir(newDir)
+        os.mkdir("surefire-reports")
+        os.mkdir("test-classes")
+        os.chdir(newDir + "/test-classes")
+        os.mkdir("screenCapture")
+        newReportDir = newDir
+        newScreenDir = newDir + "/test-classes"
+        reportsPath = src + "/surefire-reports"
+        screenPath = src + "/test-classes/screenCapture"
+
+        if os.path.exists(reportsPath):
+            os.system("cp -fr " + reportsPath + " " + newReportDir)
+        if os.path.exists(screenPath):
+            os.system("cp -fr " + screenPath + " " + newScreenDir)
+
+if __name__ == '__main__':
+
+    srcDir = r"/#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//TestProject/target"
+    jobProDir = r"/#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//TestProject/target//#JOB_NAME#/"
+    xfer = Xfer()
+    xfer.copyReport(srcDir,"/#JOB_NAME#/")
+    xfer.setFtpParams('/#GUI_FTP_REPORT_HOST#/', '/#GUI_FTP_REPORT_USERNAME#/', '/#GUI_FTP_REPORT_PASSWORD#/')
+    xfer.upload(jobProDir)
+            </command>
+        </hudson.plugins.python.Python>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gtp:end -DtaskListId=/#TASKLIST_ID#/ -DtaskType=/#TASK_TYPE#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+mvn gtp:email -DtaskListId=/#TASKLIST_ID#/ -DtaskType=/#TASK_TYPE#/
+            </command>
+        </hudson.tasks.Shell>
+    </builders>
+    <publishers>
+        <org.jenkinsci.plugins.postbuildscript.PostBuildScript plugin="postbuildscript@0.17">
+            <buildSteps>
+<hudson.tasks.Shell>
+    <command>set +e
+        source /etc/profile
+        cd /#JOB_DIR#//#JOB_NAME#///#PROJECT_NAME#//Helper
+        mvn gtp:endCheck -DtaskListId=/#TASKLIST_ID#/
+    </command>
+</hudson.tasks.Shell>
+            </buildSteps>
+            <scriptOnlyIfSuccess>false</scriptOnlyIfSuccess>
+            <scriptOnlyIfFailure>false</scriptOnlyIfFailure>
+            <markBuildUnstable>false</markBuildUnstable>
+        </org.jenkinsci.plugins.postbuildscript.PostBuildScript>
+    </publishers>
+    <buildWrappers/>
+</project>

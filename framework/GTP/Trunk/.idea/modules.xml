@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/gtp.iml" filepath="$PROJECT_DIR$/gtp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gtp-common/gtp-common.iml" filepath="$PROJECT_DIR$/gtp-common/gtp-common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gtp-domain/gtp-domain.iml" filepath="$PROJECT_DIR$/gtp-domain/gtp-domain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gtp-maven-plugin/gtp-maven-plugin.iml" filepath="$PROJECT_DIR$/gtp-maven-plugin/gtp-maven-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gtp-parent/gtp-parent.iml" filepath="$PROJECT_DIR$/gtp-parent/gtp-parent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gtp-service/gtp-service.iml" filepath="$PROJECT_DIR$/gtp-service/gtp-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gtp-web/gtp-web.iml" filepath="$PROJECT_DIR$/gtp-web/gtp-web.iml" />
+    </modules>
+  </component>
+</project>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <node id="001" name="任务" pid="0" value="getGroup" type="classtree" url="/task" loadOnDemand="true" ></node>
+    <node id="002" name="SVN" pid="0" value="getOnlyGroup" type="classtree" url="/branch" loadOnDemand="true"></node>
+    <node id="003" name="调度规则" pid="0" value="" type="classtree" url="/regularRule" loadOnDemand="false"></node>
+    <node id="004" name="机器" pid="0" value="" type="classtree" url="/machine" loadOnDemand="false"></node>
+    <node id="005" name="Hosts" pid="0" value="" type="classtree" url="/hosts" loadOnDemand="false"></node>
+
+    <node id="006" name="性能测试" pid="0" value="getChild" type="classtree" url="" loadOnDemand="false"></node>
+    <node id="006001" name="配置" pid="006" value="" type="classtree" url="/load/conf" loadOnDemand="false"></node>
+    <node id="006002" name="场景" pid="006" value="" type="classtree" url="/load/scene" loadOnDemand="false"></node>
+
+    <node id="007" name="GTP报告" pid="0" value="getChild" type="classtree" url="" loadOnDemand="true"></node>
+    <node id="007001" name="API/GUI报告" pid="007" value="" type="classtree" url="/gtp-report" loadOnDemand="false"></node>
+    <node id="007003" name="LOAD报告" pid="007" value="" type="classtree" url="/gtp-report/jmt" loadOnDemand="false"></node>
+    <node id="007004" name="LOAD历史报告" pid="007" value="" type="classtree" url="/gtp-report/jmthistory" loadOnDemand="false"></node>
+
+</root>

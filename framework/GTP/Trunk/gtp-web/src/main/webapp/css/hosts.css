@@ -1,0 +1,5 @@
+.hosts_detail_table_span{
+    word-break: keep-all;
+    /*display: block;*/
+    width: 100%;
+}

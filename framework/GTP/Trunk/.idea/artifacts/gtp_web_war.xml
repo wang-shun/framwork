@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="gtp-web:war">
+    <output-path>$PROJECT_DIR$/gtp-web/target</output-path>
+    <root id="archive" name="gtp-web.war">
+      <element id="artifact" artifact-name="gtp-web:war exploded" />
+    </root>
+  </artifact>
+</component>

@@ -1,0 +1,34 @@
+## YAML Template.
+
+spring:
+    view:
+        prefix: /
+        suffix: .jsp
+
+# Database
+db:
+    driver: com.mysql.jdbc.Driver
+    url: jdbc:mysql://10.144.32.129:3306/etp
+    username: root
+    password: password
+
+# Hibernate
+hibernate:
+    dialect: org.hibernate.dialect.MySQLInnoDBDialect
+    show_sql: true
+    hbm2ddl:
+            auto: update
+entitymanager:
+    packagesToScan: com.gome.test.gtp
+
+#Server
+server:
+    port: 8099
+    address: 127.0.0.1
+
+mongodb:
+    port: 27017
+    address: 10.144.32.129
+cd:
+  root:
+    nodeId: 0

@@ -1,0 +1,27 @@
+## YAML Template.
+
+spring:
+    view:
+        prefix: /
+        suffix: .jsp
+
+#Server
+server:
+    port: 8099
+    address: 127.0.0.1
+
+cd:
+  root:
+    nodeId: 0
+
+admin:
+  email: tech-test-arch@yolo24.com
+
+task:
+  status:
+    refresh:
+     interval: 2000
+
+svn:
+  username: liujinhu
+  password: jin123

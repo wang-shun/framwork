@@ -1,0 +1,21 @@
+.jumbotron h1 {
+    /*text-align: center;*/
+    font-weight: 200;
+}
+
+/*.jumbotron h3 {*/
+    /*text-align: left;*/
+    /*margin-top: 5%;*/
+    /*margin-left: 2%;*/
+/*}*/
+#jum-div {
+    margin-top: 1%;
+}
+.sub-row {
+}
+.caption h3 {
+    text-align: center;
+}
+.navbar-fixed-bottom p {
+    text-align: center;
+}

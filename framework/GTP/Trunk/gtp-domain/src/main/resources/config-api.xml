@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+    <actions/>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <assignedNode>/#AGENT_LABEL#/</assignedNode>
+    <canRoam>false</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <hudson.tasks.Shell>
+            <command>set +e
+echo '/#JOB_HOSTS#/' > /etc/hosts
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+svn_code="/#SVN_CODE_DIR#/"
+jenkins_jobs="/#JOB_DIR#/"
+svn_url="/#SVN_URL#/"
+svn_url_dir="/#SVN_DIR#/"
+job_name="/#JOB_NAME#/"
+svn_dir="$svn_code$svn_url_dir"
+usleep `echo "$RANDOM*151" | bc`
+if [ ! -x "$svn_code" ]
+then
+mkdir -p "$svn_code"
+fi
+if [ ! -x "$svn_dir" ]
+then
+mkdir -p "$svn_dir"
+cd "$svn_dir"
+cd ..
+svn co "$svn_url"
+else
+cd "$svn_dir"
+for i in `seq 10`
+do
+echo "The $i th time try to do svn update!!!"
+`svn up`
+res=$?
+if [ "$res" -ne "127" ];then
+base=`echo "$RANDOM%10000" | bc`
+time=`echo "$i*1000000+$base*100*$i" | bc`
+usleep $time
+else
+break
+fi
+done
+fi
+cp -fr "$svn_dir" "$jenkins_jobs$job_name"</command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//Helper
+mvn gtp:start -DtaskListId=/#TASKLIST_ID#/
+            </command>
+        </hudson.tasks.Shell>
+<!-- update interface pom.xml -->
+<hudson.tasks.Shell>
+    <command>set +e
+        source /etc/profile
+        cd /#PROJECT_NAME#//Helper
+        mvn gtp:updateENV -DtaskListId=/#TASKLIST_ID#/
+    </command>
+</hudson.tasks.Shell>
+
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#/
+if [ -d "./HelperExtension" ];then
+sh ./APIGenExtension.sh
+fi
+sh ./APIGenHelper.sh
+sh ./APIGen.sh
+cd Helper
+mvn gtp:spiltCase -DtaskListId=/#TASKLIST_ID#/
+cd ../TestProject
+mvn clean test
+exit 0
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//Helper
+mvn gtp:end -DtaskListId=/#TASKLIST_ID#/ -DtaskType=/#TASK_TYPE#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//Helper
+mvn gtp:email -DtaskListId=/#TASKLIST_ID#/ -DtaskType=/#TASK_TYPE#/
+            </command>
+        </hudson.tasks.Shell>
+    </builders>
+    <publishers>
+        <org.jenkinsci.plugins.postbuildscript.PostBuildScript plugin="postbuildscript@0.17">
+            <buildSteps>
+                <hudson.tasks.Shell>
+                    <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//Helper
+mvn gtp:endCheck -DtaskListId=/#TASKLIST_ID#/
+                    </command>
+                </hudson.tasks.Shell>
+            </buildSteps>
+            <scriptOnlyIfSuccess>false</scriptOnlyIfSuccess>
+            <scriptOnlyIfFailure>false</scriptOnlyIfFailure>
+            <markBuildUnstable>false</markBuildUnstable>
+        </org.jenkinsci.plugins.postbuildscript.PostBuildScript>
+    </publishers>
+    <buildWrappers/>
+</project>

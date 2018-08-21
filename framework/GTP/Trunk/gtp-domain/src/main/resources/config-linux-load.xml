@@ -1,0 +1,241 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+    <actions/>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties/>
+    <scm class="hudson.scm.NullSCM"/>
+    <assignedNode>/#AGENT_LABEL#/</assignedNode>
+    <canRoam>false</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <hudson.tasks.Shell>
+            <command>set +e
+echo '/#JOB_HOSTS#/' > /etc/hosts
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+svn_code="/#SVN_CODE_DIR#/"
+jenkins_jobs="/#JOB_DIR#/"
+svn_url="/#SVN_URL#/"
+svn_url_dir="/#SVN_DIR#/"
+job_name="/#JOB_NAME#/"
+svn_dir="$svn_code$svn_url_dir"
+usleep `echo "$RANDOM*151" | bc`
+if [ ! -x "$svn_code" ]
+then
+mkdir -p "$svn_code"
+fi
+if [ ! -x "$svn_dir" ]
+then
+mkdir -p "$svn_dir"
+cd "$svn_dir"
+cd ..
+svn co "$svn_url"
+else
+cd "$svn_dir"
+for i in `seq 10`
+do
+echo "The $i th time try to do svn update!!!"
+`svn up`
+res=$?
+if [ "$res" -ne "127" ];then
+base=`echo "$RANDOM%10000" | bc`
+time=`echo "$i*1000000+$base*100*$i" | bc`
+usleep $time
+else
+break
+fi
+done
+fi
+cp -fr "$svn_dir" "$jenkins_jobs$job_name"</command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+        <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//ExecuteTest
+mvn gtp:genLoadConf -DtaskListId=/#TASKLIST_ID#/ -DworkDir=/#WORKDIR#/
+        </command>
+        </hudson.tasks.Shell>
+        <hudson.plugins.python.Python plugin="python@1.3">
+            <command>
+__author__ = 'lizonglin'
+import os
+import shutil
+
+_TMPDIR_ = "/#TMPLIBDIR#/"
+_LIBDIR_ = "/#LIBDIR#/"
+
+class LoadPkgCopy:
+    def __init__(self):
+        self.tmpDir = None
+
+    def __del__(self):
+        pass
+
+    def clearDir(self, libdir):
+        if os.path.exists(libdir):
+            os.chdir(libdir)
+            os.system("rm -fr *")
+        else:
+            print("============./lib not exists============")
+    def copy2lib(self, subdir, libdir):
+        targetdir = subdir + "/target"
+        if os.path.exists(targetdir):
+            subfiles = os.listdir(targetdir)
+            for subfile in subfiles:
+                if os.path.splitext(subfile).count('.jar') == 1:
+                    jarfile = targetdir + "/" + subfile
+                    shutil.copy(jarfile, libdir)
+                    print("Copied packaged " + jarfile)
+        else:
+            subfiles = os.listdir(subdir)
+            for subfile in subfiles:
+                if os.path.splitext(subfile).count('.jar') == 1:
+                    jarfile = subdir + "/" + subfile
+                    shutil.copy(jarfile, libdir)
+                    print("Copied " + jarfile)
+
+    def pkgcopysource(self, tmpDir, libdir):
+        subdirs = os.listdir(tmpDir)
+        for dir in subdirs:
+            subdir = tmpDir + "/" + dir
+            if "pom.xml" in os.listdir(subdir):
+                os.chdir(subdir)
+                os.system("mvn package -X -Dmaven.javadoc.skip=true -Dmaven.test.skip=true")
+            self.copy2lib(subdir, libdir)
+
+if __name__ == '__main__':
+    loadPkgCopy = LoadPkgCopy()
+    loadPkgCopy.pkgcopysource(_TMPDIR_, _LIBDIR_)
+            </command>
+        </hudson.plugins.python.Python>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//ExecuteTest
+mvn gtp:start -DtaskListId=/#TASKLIST_ID#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//ExecuteTest
+mvn verify/#LOAD_VERIFY#/
+            </command>
+        </hudson.tasks.Shell>
+        <hudson.plugins.python.Python plugin="python@1.3">
+        <command>
+__author__ = 'lizonglin'
+
+import os
+from ftplib import FTP
+
+class Xfer(object):
+    def __init__(self):
+        self.ftp = None
+        self.ip = ""
+        self.uname = ""
+        self.pwd = ""
+        self.port = ""
+        self.timeout = ""
+
+    def __del__(self):
+        pass
+
+    def setFtpParams(self, ip, uname, pwd, port=21, timeout=60):
+        self.ip = ip
+        self.uname = uname
+        self.pwd = pwd
+        self.port = port
+        self.timeout = timeout
+
+    def initEnv(self):
+        if self.ftp is None:
+            self.ftp = FTP()
+            print '### connect ftp server: %s ...' % self.ip
+            self.ftp.connect(self.ip, self.port, self.timeout)
+            self.ftp.login(self.uname, self.pwd)
+            print self.ftp.getwelcome()
+
+    def clearEnv(self):
+        if self.ftp:
+            self.ftp.close()
+            print '### disconnect ftp server: %s!' % self.ip
+            self.ftp = None
+
+    def uploadDir(self, localdir='./', remotedir='./'):
+        if not os.path.isdir(localdir):
+            return
+        files = os.listdir(localdir)
+        for f in files:
+            src = os.path.join(localdir, f)
+            self.uploadFile(src, f)
+
+    def uploadFile(self, localpath, remotepath='./'):
+        if not os.path.isfile(localpath):
+            return
+        print '+++ upload %s to %s:%s' % (localpath, self.ip, remotepath)
+        self.ftp.storbinary('STOR ' + remotepath, open(localpath, 'rb'))
+
+    def upload(self, subDir, srcList, targetDir):
+        self.initEnv()
+        self.ftp.cwd(subDir)
+        self.ftp.mkd(targetDir)
+        self.ftp.cwd(targetDir)
+        for self.srcDir in srcList:
+            self.uploadDir(self.srcDir)
+        self.clearEnv()
+
+
+
+if __name__ == '__main__':
+    subDir = "/#LOAD_FTP_LOG_SUBDIR#/"
+
+    jobName = "/#JOB_NAME#/"
+    logDir = r"/#WORKDIR#//ExecuteTest/target/log"
+    logsDir = r"/#WORKDIR#//ExecuteTest/target/jmeter/logs"
+    logDirList = [logDir, logsDir]
+
+    xfer = Xfer()
+    xfer.setFtpParams('/#GUI_FTP_REPORT_HOST#/', '/#GUI_FTP_REPORT_USERNAME#/', '/#GUI_FTP_REPORT_PASSWORD#/')
+    xfer.upload(subDir, logDirList, jobName)
+        </command>
+        </hudson.plugins.python.Python>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//ExecuteTest
+mvn gtp:endLoad -DtaskListId=/#TASKLIST_ID#/ -DtaskType=/#TASK_TYPE#//#LOAD_VERIFY#/</command>
+        </hudson.tasks.Shell>
+        <hudson.tasks.Shell>
+            <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//ExecuteTest
+mvn gtp:email -DtaskListId=/#TASKLIST_ID#/ -DtaskType=/#TASK_TYPE#/
+            </command>
+        </hudson.tasks.Shell>
+    </builders>
+    <publishers>
+        <org.jenkinsci.plugins.postbuildscript.PostBuildScript plugin="postbuildscript@0.17">
+            <buildSteps>
+                <hudson.tasks.Shell>
+                    <command>set +e
+source /etc/profile
+cd /#PROJECT_NAME#//ExecuteTest
+mvn gtp:endCheck -DtaskListId=/#TASKLIST_ID#/
+                    </command>
+                </hudson.tasks.Shell>
+            </buildSteps>
+            <scriptOnlyIfSuccess>false</scriptOnlyIfSuccess>
+            <scriptOnlyIfFailure>false</scriptOnlyIfFailure>
+            <markBuildUnstable>false</markBuildUnstable>
+        </org.jenkinsci.plugins.postbuildscript.PostBuildScript>
+    </publishers>
+    <buildWrappers/>
+</project>

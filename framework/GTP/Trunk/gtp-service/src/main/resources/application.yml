@@ -1,0 +1,89 @@
+## YAML Template.
+#Server
+server:
+  port: 8088
+  address: 127.0.0.1
+
+#Executors' CronExpress
+
+
+executor:
+  cronexp:
+#扫描Responsequeue,发送给jenkins
+    sendJobService: "*/5 * * * * ? *"
+#扫描ResponseInfo，插入Queue队列
+    splitJobService: "*/5 * * * * ? *"
+#扫描ResponseQueue，更新队列状态
+    updateJobService: "*/5 * * * * ? *"
+
+#扫描TaskInfo，更新有变化的Task-Scheduler
+    updatescheduler: "*/5 * * * * ? *"
+
+#扫描 TaskInfo 创建 TaskList 5秒
+    createtask: "*/5 * * * * ? *"
+
+#扫描 TaskList 拆分 TaskList 5秒
+    splittask: "*/5 * * * * ? *"
+
+#扫描 TaskList 创建 Jenkins Job 5秒
+    createjenkins: "*/5 * * * * ? *"
+
+#扫描并更新长时间停留在中间状态的 TaskList TaskInfo AgentInfo 为 Abortted
+    abortexpiretask: "*/31 * * * * ? *"
+
+#扫描 TaskList 将发送到 Jenkins 时间过长的 TaskList 回退到 Splitted
+    revertlongstoptask: "40 40 * * * ? *"
+
+#更新 TaskReport(每小时的第10分30秒)
+    updatetaskreport: "30 10 * * * ? *"
+
+#扫描 TaskList 删除 Jenkins 上的历史 Job(每周一5点)
+    deleteexpirejob: "0 0 5 ? * MON *"
+
+#根据TaskList的状态修正 TaskInfo 的状态（每5秒修正一次）
+    amendstatus: "*/5 * * * * ? *"
+
+#向jenkins询问数据库中处于未结束状态的job，将不统一的状态修正（防止某个gtp插件未执行就中止,包括LastMojo）
+    synstatus: "*/30 * * * * ? *"
+
+#每天发送报告的时间(每天8点半发)
+    sentdailyreport: "0 30 8 * * ? *"
+
+#更新AGReport表数据 （每小时的第10分30秒）
+    updateagreport: "30 10 * * * ? *"
+
+#更新删除已经生成的Excel文件 （每小时的第30分30秒）
+    deleteReportFile: "30 30 * * * ? *"
+
+
+
+
+expire:
+  duration:
+#CreateTask取近XX分钟到期的任务
+    createTask: 30
+
+#Sent 状态超过 30 分钟
+    longsent: 1800000
+
+#中间状态（非结束状态）API GUI 任务停留超过 6 小时
+    longstuck: 21600000
+
+#中间状态（非结束状态）Load 任务停留超过 12 小时
+    longstuckload: 43200000
+
+#Jenkins Job 历史保留 30 天
+    jenkinsjob: 2592000000
+
+#获取机器和发送完Jenkins Job修改Task状态为50之间的时间差
+    difftime: 10000
+
+#发送Jenkins后同步DB和JenkinsJob状态的时间差
+    sentdelayseconds: 20
+#org:
+#  quartz:
+#    threadPool:
+#      class: org.quartz.simpl.SimpleThreadPoo
+#      threadCount: 11
+#      threadPriority: 5
+#      threadsInheritContextClassLoaderOfInitializingThread: true
